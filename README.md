@@ -1,2 +1,5 @@
-To edit your portfolio, please go over to the gh_pages branch!
-Name: FirstName_BSE_Portfolio
+Overview
+========
+
+This project helps identify distracted drivers and alerts them.
+
