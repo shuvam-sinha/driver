@@ -32,11 +32,30 @@ def readRecord1(filename):
 def readRecord2(filename1):
     with open(filename1) as csvfile:
         reader = csv.DictReader(csvfile)
-        for i in reader:
-            print (i["user_id"], i["name"], i["start_time"], i["end_time"], i["num_short"], i["num_medium"], i["num_long"])
+        allRows = []
+        for row in reader:
+            allRows.append(row)
+        return allRows
 
+
+def getAnalytics1(userID, desiredID):
+    if userID == desiredID:
+        print (row["user_id"], row["name"], row["start_time"], row["end_time"], row["num_short"], row["num_medium"], row["num_long"])
+
+
+def getAnalytics(userID, allRows):
+    # Subset of rows that match userID
+    desired_rows = []
+    for row in allRows:
+        if row["user_id"] == userID:
+            desired_rows.append(row)
+    return desired_rows
 
 if __name__ == "__main__":
     filename = os.environ['HOME'] + "/data/driver_data.csv"
-    # readRecord1(filename)
-    readRecord2(filename)
+    #readRecord1(filename)
+    rows = readRecord2(filename)
+    filteredRows = getAnalytics("shuvam_sinha", rows)
+    for row in filteredRows:
+        print (row["user_id"], row["name"], row["start_time"], row["end_time"], row["num_short"], row["num_medium"], row["num_long"])
+    
