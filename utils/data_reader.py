@@ -2,26 +2,19 @@
 import csv
 import os
 import time
-
+from simple_term_menu import TerminalMenu
+import matplotlib.pyplot as plt
+import numpy as np
 
 seconds_per_day = 86400
 
-def readRecords(filename1):
-    with open(filename1) as csvfile:
+def readRecords(filename):
+    with open(filename) as csvfile:
         reader = csv.DictReader(csvfile)
         allRows = []
         for row in reader:
             allRows.append(row)
         return allRows
-
-
-# def getAnalytics2(userID, allRows):
-#     # Subset of rows that match userID
-#     desired_rows = []
-#     for row in allRows:
-#         if row["user_id"] == userID:
-#             desired_rows.append(row)
-#     return desired_rows
 
 
 def getAnalytics(userID, allRows, duration = None, start_hour = None, end_hour = None):
@@ -33,13 +26,13 @@ def getAnalytics(userID, allRows, duration = None, start_hour = None, end_hour =
         filteredRows = allRows
     else:
         if duration.lower() == "a":
-            start_time = end_time - 86400
+            start_time = end_time - seconds_per_day
         elif duration.lower() == "b":
-            start_time = end_time - 604800
+            start_time = end_time - 7*seconds_per_day
         elif duration.lower() == "c":
-            start_time = end_time - 2628288
+            start_time = end_time - 30*seconds_per_day
         elif duration.lower() == "d":
-            start_time = end_time - 31536000
+            start_time = end_time - 365*seconds_per_day
     
         for row in allRows:
             cond1 = int(row['start_time']) >= start_time and int(row['end_time']) <= end_time
@@ -63,6 +56,7 @@ def getAnalytics(userID, allRows, duration = None, start_hour = None, end_hour =
                 desired_rows.append(row)
     return desired_rows
 
+
 def analyzeResults(allRows):
     short_num = 0
     medium_num = 0
@@ -72,6 +66,46 @@ def analyzeResults(allRows):
         medium_num += int(row["num_medium"])
         long_num += int(row["num_long"])
     return short_num, medium_num, long_num
+
+
+def getOption():
+    options = ["[a] Previous Day", "[b] Previous Week", "[c] Previous Month", "[d] Previous Year", "[e] All time", "[x] Exit"]
+    terminal_menu = TerminalMenu(options, title="Select a time range for metrics")
+    menu_entry_index = terminal_menu.show()
+    return options[menu_entry_index]
+
+
+def createGraph(text, filteredTimeRows):
+    print(text)
+    short = []
+    medium = []
+    long = []
+    count = []
+    for iteration, thisTime in enumerate(filteredTimeRows):
+        print("Hour: ", iteration)
+        for row in thisTime:
+            print (row["user_id"], row["name"], row["start_time"], row["end_time"], row["num_short"], row["num_medium"], row["num_long"])
+        (totalShort, totalMedium, totalLong) = analyzeResults(thisTime)
+        print("Short:", totalShort, "\nMedium:", totalMedium, "\nLong:", totalLong)
+        short.append(totalShort)
+        medium.append(totalMedium)
+        long.append(totalLong)
+        count.append(iteration)
+
+    y_short = short
+    y_medium = medium
+    y_long = long
+    x = count
+    X_axis = np.arange(len(x))
+    plt.bar(X_axis-0.4, y_short, 0.4, label = 'Short')
+    plt.bar(X_axis, y_medium, 0.4, label = 'Medium')
+    plt.bar(X_axis+0.4, y_long, 0.4, label = 'Long')
+    plt.xticks(X_axis, x)
+    plt.xlabel("Detections")
+    plt.ylabel("Hour")
+    plt.legend()
+    plt.show()
+
 
 if __name__ == "__main__":
     # Read the records
@@ -86,17 +120,33 @@ if __name__ == "__main__":
     (totalShort, totalMedium, totalLong) = analyzeResults(filteredAllRows)
     print("Short:", totalShort, "\nMedium:", totalMedium, "\nLong:", totalLong)
 
-    # Analytics within a time range
-    filteredTimeRows = []
-    for i in range(0, 24):
-        filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "B", i*3600, (i+1)*3600-1))
-
-    print("Previous Week:")
-    for iteration, thisTime in enumerate(filteredTimeRows):
-        print("Hour: ", iteration)
-        for row in thisTime:
-            print (row["user_id"], row["name"], row["start_time"], row["end_time"], row["num_short"], row["num_medium"], row["num_long"])
-        (totalShort, totalMedium, totalLong) = analyzeResults(thisTime)
-        print("Short:", totalShort, "\nMedium:", totalMedium, "\nLong:", totalLong)
-
-    
+    # Analytics within a time range    
+    isRun = True
+    text = ""
+    letter = ""
+    while isRun:
+        filteredTimeRows = []
+        myOption = getOption()
+        print(f"You have selected {myOption}!")
+        if myOption == "[a] Previous Day":
+            for i in range(0, 24):
+                filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "a", i*3600, (i+1)*3600-1))
+            createGraph(myOption, filteredTimeRows)
+        elif myOption == "[b] Previous Week":
+            for i in range(0, 24):
+                filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "b", i*3600, (i+1)*3600-1))
+            createGraph(myOption, filteredTimeRows)
+        elif myOption == "[c] Previous Month":
+            for i in range(0, 24):
+                filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "c", i*3600, (i+1)*3600-1))
+            createGraph(myOption, filteredTimeRows)
+        elif myOption == "[d] Previous Year":
+            for i in range(0, 24):
+                filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "d", i*3600, (i+1)*3600-1))
+            createGraph(myOption, filteredTimeRows)
+        elif myOption == "[e] All time":
+            for i in range(0, 24):
+                filteredTimeRows.append(getAnalytics("shuvam_sinha", rows, "e", i*3600, (i+1)*3600-1))
+            createGraph(myOption, filteredTimeRows)
+        elif myOption == "[x] Exit":
+            isRun = False
