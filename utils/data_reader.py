@@ -97,12 +97,13 @@ def createGraph(text, filteredTimeRows):
     y_long = long
     x = count
     X_axis = np.arange(len(x))
+    plt.figure(figsize=(15, 10))
     plt.bar(X_axis-0.4, y_short, 0.4, label = 'Short')
     plt.bar(X_axis, y_medium, 0.4, label = 'Medium')
     plt.bar(X_axis+0.4, y_long, 0.4, label = 'Long')
     plt.xticks(X_axis, x)
-    plt.xlabel("Detections")
-    plt.ylabel("Hour")
+    plt.xlabel("Hour")
+    plt.ylabel("Detection")
     plt.legend()
     plt.show()
 
