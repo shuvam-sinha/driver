@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pygame
 import git
+import argparse
+import csv
+import os
 from picamera2 import Picamera2, Preview, MappedArray
 
 
@@ -35,9 +38,47 @@ def draw_eyes(request):
         for e in eyes:
             (x, y, w, h) = [c * n // d for c, n, d in zip(e, (w0, h0) * 2, (w1, h1) * 2)]
             cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
+            
+            
+def addRecord(userId, name, startTime, endTime, numShort, numMedium, numLong):
+    if userId is None:
+        return None
+    if name is None:
+        full_name = userId
+    else:
+        full_name = name
+    
+    filename = get_git_root('.') + "/data/driver_data.csv"
+    with open(filename, 'a') as csvFile:
+        fieldnames = ['user_id', 'name', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
+        writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
+        if os.path.getsize(filename) == 0:
+            writer.writeheader()
+
+        data = {
+            "user_id": userId,
+            "name": full_name,
+            "start_time": int(startTime),
+            "end_time": int(endTime),
+            "num_short": numShort,
+            "num_medium": numMedium,
+            "num_long": numLong
+        }
+
+        writer.writerow(data)
+
 
 if __name__ == "__main__":
     # Initialization
+    parser = argparse.ArgumentParser(
+        prog='detector',
+        description='Eye detection'
+    )
+
+    parser.add_argument('-u', '--username', required=True)
+    parser.add_argument('-n', '--name')
+    args = parser.parse_args()
+
     original_detect_time = time.time()
     detect_time = original_detect_time
     detection = [0]
@@ -45,7 +86,6 @@ if __name__ == "__main__":
     times_not_detected = 0
 
     root_location = get_git_root('.')
-    #eye_detector = cv2.CascadeClassifier("/home/ssinha/Bluestamp_Project/haarcascade_eye.xml")
     eye_detector = cv2.CascadeClassifier(root_location + "/resources/haarcascade_eye.xml")
 
     picam2 = Picamera2()
@@ -70,7 +110,11 @@ if __name__ == "__main__":
     pygame.mixer.music.set_volume(speaker_volume)
 
     start_time = time.monotonic()
-    while time.monotonic() - start_time < 45:
+    
+    numShort = 0
+    numMedium = 0
+    numLong = 0
+    while time.monotonic() - start_time < 30:
         buffer = picam2.capture_buffer("lores")
         grey = buffer[:s1 * h1].reshape((h1, s1))
         eyes = eye_detector.detectMultiScale(grey, 1.12, 15)
@@ -84,18 +128,26 @@ if __name__ == "__main__":
                 if times_not_detected == 0:
                     pygame.mixer.music.load(root_location + "/resources/Alarm_sound_effect.mp3")
                     pygame.mixer.music.play()
+                    numShort+=1
                 elif times_not_detected == 1:
                     pygame.mixer.music.load(root_location + "/resources/Car_Honk_Sound_Effect.mp3")
                     pygame.mixer.music.play()
+                    numMedium+=1
                 elif times_not_detected >= 2:
                     pygame.mixer.music.load(root_location + "/resources/PolicesirenSoundEffect.mp3")
                     pygame.mixer.music.play()
+                    numLong+=1
 
                     
                 times_not_detected+=1
         elif int(current_time) % 5 != 0:
             flag = True
-            
+
+    picam2.stop()
+    endTime = time.time()        
+
+    addRecord(args.username, args.name, original_detect_time, endTime, numShort, numMedium, numLong)
+
     y = detection
     x = timestamp
     print ("Detection: ", y)
@@ -105,3 +157,4 @@ if __name__ == "__main__":
     plt.ylabel("Detection")
     plt.title("Testing")
     plt.show()
+    

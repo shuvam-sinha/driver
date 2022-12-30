@@ -43,7 +43,7 @@ if __name__ == "__main__":
         description='Eye detection'
     )
 
-    parser.add_argument('-u', '--username')
+    parser.add_argument('-u', '--username', required=True)
     parser.add_argument('-n', '--name')
     args = parser.parse_args()
     # print(args.username)
