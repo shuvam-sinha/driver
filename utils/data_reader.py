@@ -1,12 +1,18 @@
 #!/usr/bin/python3
 import csv
-import os
+import git
 import time
 from simple_term_menu import TerminalMenu
 import matplotlib.pyplot as plt
 import numpy as np
 
 seconds_per_day = 86400
+
+def get_git_root(path):
+    git_repo = git.Repo(path, search_parent_directories=True)
+    git_root = git_repo.git.rev_parse("--show-toplevel")
+    return git_root
+
 
 def readRecords(filename):
     with open(filename) as csvfile:
@@ -110,7 +116,7 @@ def createGraph(text, filteredTimeRows):
 
 if __name__ == "__main__":
     # Read the records
-    filename = os.environ['HOME'] + "/data/driver_data.csv"
+    filename = get_git_root('.') + "/data/driver_data.csv"
     rows = readRecords(filename)
 
     # Analytics across all time

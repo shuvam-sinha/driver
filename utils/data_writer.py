@@ -1,17 +1,23 @@
 #!/usr/bin/python3
 import argparse
 import csv
-import os
+import git
 import time
+import os
 from random import randrange
+
+
+def get_git_root(path):
+    git_repo = git.Repo(path, search_parent_directories=True)
+    git_root = git_repo.git.rev_parse("--show-toplevel")
+    return git_root
 
 
 def addRecord(userId, name, startTime, endTime, numShort, numMedium, numLong):
     if userId is None or name is None:
         return None
 
-    filename = os.environ['HOME'] + "/data/driver_data.csv"
-    # print(filename)
+    filename = get_git_root('.') + "/data/driver_data.csv"
     with open(filename, 'a') as csvFile:
         fieldnames = ['user_id', 'name', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
         writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
