@@ -13,20 +13,19 @@ def get_git_root(path):
     return git_root
 
 
-def addRecord(userId, name, startTime, endTime, numShort, numMedium, numLong):
-    if userId is None or name is None:
+def addRecord(userId, startTime, endTime, numShort, numMedium, numLong):
+    if userId is None:
         return None
 
     filename = get_git_root('.') + "/data/driver_data.csv"
     with open(filename, 'a') as csvFile:
-        fieldnames = ['user_id', 'name', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
+        fieldnames = ['user_id', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
         writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
         if os.path.getsize(filename) == 0:
             writer.writeheader()
 
         data = {
             "user_id": userId,
-            "name": name,
             "start_time": int(startTime),
             "end_time": int(endTime),
             "num_short": numShort,
@@ -44,7 +43,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('-u', '--username', required=True)
-    parser.add_argument('-n', '--name')
     args = parser.parse_args()
     # print(args.username)
     # print(args.name)
@@ -56,5 +54,5 @@ if __name__ == "__main__":
     numMedium = randrange(5)
     numLong = randrange(5)
 
-    addRecord(args.username, args.name, startTime, endTime, numShort, numMedium, numLong)
+    addRecord(args.username, startTime, endTime, numShort, numMedium, numLong)
 

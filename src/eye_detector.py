@@ -40,24 +40,19 @@ def draw_eyes(request):
             cv2.rectangle(m.array, (x, y), (x + w, y + h), (0, 255, 0, 0))
             
             
-def addRecord(userId, name, startTime, endTime, numShort, numMedium, numLong):
+def addRecord(userId, startTime, endTime, numShort, numMedium, numLong):
     if userId is None:
         return None
-    if name is None:
-        full_name = userId
-    else:
-        full_name = name
     
     filename = get_git_root('.') + "/data/driver_data.csv"
     with open(filename, 'a') as csvFile:
-        fieldnames = ['user_id', 'name', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
+        fieldnames = ['user_id', 'start_time', 'end_time', 'num_short', 'num_medium', 'num_long']
         writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
         if os.path.getsize(filename) == 0:
             writer.writeheader()
 
         data = {
             "user_id": userId,
-            "name": full_name,
             "start_time": int(startTime),
             "end_time": int(endTime),
             "num_short": numShort,
@@ -70,14 +65,7 @@ def addRecord(userId, name, startTime, endTime, numShort, numMedium, numLong):
 
 if __name__ == "__main__":
     # Initialization
-    parser = argparse.ArgumentParser(
-        prog='detector',
-        description='Eye detection'
-    )
-
-    parser.add_argument('-u', '--username', required=True)
-    parser.add_argument('-n', '--name')
-    args = parser.parse_args()
+    userId = input("Enter user id: ")
 
     original_detect_time = time.time()
     detect_time = original_detect_time
@@ -146,7 +134,7 @@ if __name__ == "__main__":
     picam2.stop()
     endTime = time.time()        
 
-    addRecord(args.username, args.name, original_detect_time, endTime, numShort, numMedium, numLong)
+    addRecord(userId, original_detect_time, endTime, numShort, numMedium, numLong)
 
     y = detection
     x = timestamp
