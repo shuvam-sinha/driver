@@ -8,6 +8,8 @@ import git
 import argparse
 import csv
 import os
+from simple_term_menu import TerminalMenu
+from threading import Event, Thread
 from picamera2 import Picamera2, Preview, MappedArray
 
 timestamp = [0]
@@ -65,7 +67,7 @@ def addRecord(userId, startTime, endTime, numShort, numMedium, numLong):
         writer.writerow(data)
 
 
-def runEyeDetector(eye_detector, userId):
+def runEyeDetector(eye_detector, userId, picam2):
     global times_not_detected
     global detect_time
     global original_detect_time
@@ -75,16 +77,6 @@ def runEyeDetector(eye_detector, userId):
     global h1
     global eyes
     
-    picam2 = Picamera2()
-    picam2.start_preview(Preview.QTGL)
-    config = picam2.create_preview_configuration(
-        main={"size": (640, 480)},
-        lores={"size": (320, 240), "format": "YUV420"}
-    )
-    picam2.configure(config)
-    (w0, h0) = picam2.stream_configuration("main")["size"]
-    (w1, h1) = picam2.stream_configuration("lores")["size"]
-    s1 = picam2.stream_configuration("lores")["stride"]
     eyes = []
 
     pygame.mixer.init()
@@ -97,6 +89,7 @@ def runEyeDetector(eye_detector, userId):
     
     picam2.post_callback = draw_eyes
     picam2.start()
+
     flag = True
 
     start_time = time.monotonic()
@@ -104,7 +97,10 @@ def runEyeDetector(eye_detector, userId):
     numShort = 0
     numMedium = 0
     numLong = 0
-    while time.monotonic() - start_time < 30:
+    
+    while True:
+        if event.is_set():
+                break
         buffer = picam2.capture_buffer("lores")
         grey = buffer[:s1 * h1].reshape((h1, s1))
         eyes = eye_detector.detectMultiScale(grey, 1.12, 15)
@@ -137,20 +133,30 @@ def runEyeDetector(eye_detector, userId):
     endTime = time.time()        
 
     addRecord(userId, original_detect_time, endTime, numShort, numMedium, numLong)
+#     plotGraph()
 
-    y = detection
-    x = timestamp
-    print ("Detection: ", y)
-    print ("Timestamp: ", x)
-    plt.bar(x, y)
-    plt.xlabel("Time")
-    plt.ylabel("Detection")
-    plt.title("Testing")
-    plt.show()
+
+# def plotGraph():
+#     y = detection
+#     x = timestamp
+#     print ("Detection: ", y)
+#     print ("Timestamp: ", x)
+#     plt.bar(x, y)
+#     plt.xlabel("Time")
+#     plt.ylabel("Detection")
+#     plt.title("Testing")
+#     plt.show()
+
+
+def isActive():
+    options = ["[a] Start Drive", "[b] Stop Drive", "[x] Exit"]
+    terminal_menu = TerminalMenu(options, title="Select drive mode")
+    menu_entry_index = terminal_menu.show()
+    return options[menu_entry_index]
 
 
 if __name__ == "__main__":
-        # Initialization
+    # Initialization
     userId = input("Enter user id: ")
     root_location = get_git_root('.')
     
@@ -160,4 +166,39 @@ if __name__ == "__main__":
     else:    
         eye_detector = cv2.CascadeClassifier(root_location + "/resources/haarcascade_eye_tree_eyeglasses.xml")
 
-    runEyeDetector(eye_detector, userId)
+    picam2 = Picamera2()
+    picam2.start_preview(Preview.QTGL)
+    config = picam2.create_preview_configuration(
+        main={"size": (640, 480)},
+        lores={"size": (320, 240), "format": "YUV420"}
+    )
+    picam2.configure(config)
+    (w0, h0) = picam2.stream_configuration("main")["size"]
+    (w1, h1) = picam2.stream_configuration("lores")["size"]
+    s1 = picam2.stream_configuration("lores")["stride"]
+
+    isRun = True
+    current = None
+    
+    while isRun:
+        saved = current
+        current = isActive()
+        
+        if current =="[x] Exit":
+            isRun = False
+        elif saved is None and current == "[b] Stop Drive":
+            print ("Invalid option. Ignoring!")
+        elif current == saved:
+            print (f"Option {current} is same as before. Ignoring!")
+        else:
+            print (f"You have selected {current}!")
+            if current == "[a] Start Drive":
+                event = Event()
+                t1 = Thread(target = runEyeDetector, args = (eye_detector, userId, picam2, ))
+                t1.setDaemon(True)
+                t1.start()
+            else:
+                event.set()
+                t1.join()
+
+    picam2.stop()
